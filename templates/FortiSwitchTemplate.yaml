@@ -58,7 +58,7 @@ zabbix_export:
               expression: 'avg(/Fortinet FortiSwitch SNMP/fsChassisTemp2,5)>55'
               name: 'FortiSwitch: Cihaz ici yuksek sicaklik (>55°C)'
               priority: HIGH
-              description: 'Switch sicakligi kritik esigi gecti. Fanlar veya oda sogutmasi kontrol edilmelidir.'
+              description: 'Switch sicakligi kritik eşiği gecti. Fanlar veya oda sogutmasi kontrol edilmelidir.'
               tags:
                 - tag: Alert
                   value: Critical
