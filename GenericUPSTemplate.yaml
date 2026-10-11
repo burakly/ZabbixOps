@@ -1,0 +1,438 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 3dcd5bbe90534f9e8eb5c2d53756af63
+      name: Templates/Power
+  templates:
+    - uuid: f6aafe66d82548269eb24375f3251bbb
+      template: 'Generic UPS SNMP'
+      name: 'Generic UPS SNMP'
+      description: |
+        SNMP üzerinden veri veren UPS Cihazları için Zabbix 7.4 Standartlarında Yenilenmiş Eksiksiz Şablon.
+                        
+                        İzlenen Alanlar:
+                        - Seri Numarası, Firmware Versiyonu, Name, Model Bilgileri
+                        - Cihaz Açık Kalma Süresi (Uptime & Reboot Alarmı)
+                         
+        Author
+        Burak Akbayrak
+      groups:
+        - name: Templates/Power
+      items:
+        - uuid: b1756d82229645b2a571453dc084b98f
+          name: 'Battery Capacity'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.2.2.1.0
+          key: ups.battery.capacity
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: component
+              value: battery
+          triggers:
+            - uuid: c9d4902f59ec44ef9709c30581d3e204
+              expression: 'last(/Generic UPS SNMP/ups.battery.capacity)<20'
+              name: 'UPS Akü Kapasitesi %20 Altında'
+              priority: HIGH
+        - uuid: 41f9603fcfc446ba80141952904dd5c6
+          name: 'Battery Full Charge Voltage'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.935.1.1.1.2.2.6.0
+          key: ups.battery.FullCharge.Voltage
+          value_type: FLOAT
+          units: V
+          tags:
+            - tag: component
+              value: battery
+        - uuid: 07c7e7e27a5d48179fc14ff3057bc7d5
+          name: 'Battery Runtime Remaining'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.2.2.4.0
+          key: ups.battery.runtime
+          delay: 30s
+          units: s
+          tags:
+            - tag: component
+              value: battery
+        - uuid: 6959964a685042f4a434feb324f0e3ea
+          name: 'Battery Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.2.1.1.0
+          key: ups.battery.status
+          delay: 30s
+          valuemap:
+            name: 'UPS Battery Status'
+          tags:
+            - tag: component
+              value: battery
+          triggers:
+            - uuid: e70f59c0eac640169edb277ecf1ce49b
+              expression: 'last(/Generic UPS SNMP/ups.battery.status)=3'
+              name: 'UPS Akü Seviyesi Düşük (Battery Low)'
+              priority: HIGH
+        - uuid: 43c8d9079287443fb3821cf33606d031
+          name: 'Battery Temperature'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.2.2.3.0
+          key: ups.battery.temperature
+          value_type: FLOAT
+          units: °C
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.1'
+          tags:
+            - tag: component
+              value: battery
+          triggers:
+            - uuid: d069a6806f1740e9a8660ff8a1c1a6d3
+              expression: 'last(/Generic UPS SNMP/ups.battery.temperature)>45'
+              name: 'UPS Akü Sıcaklığı Yüksek (>45°C)'
+              priority: AVERAGE
+        - uuid: 3df775901d3c4cbfa1c2e3c9baec81b0
+          name: 'Battery Voltage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.2.2.2.0
+          key: ups.battery.voltage
+          delay: 30s
+          value_type: FLOAT
+          units: V
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: component
+              value: battery
+        - uuid: c1fef6b4e1b14165b6990f9a187da150
+          name: 'UPS Model'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.935.1.1.1.1.1.0
+          key: ups.model
+          delay: 1d
+          value_type: TEXT
+          inventory_link: MODEL
+          tags:
+            - tag: component
+              value: system
+        - uuid: a7f7017312c14011b33cc5f4cc6ef224
+          name: 'UPS Name'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.1.5.0
+          key: ups.name
+          delay: 1d
+          value_type: TEXT
+          tags:
+            - tag: component
+              value: system
+        - uuid: 55c2635681c14f3295191465deb508f8
+          name: 'UPS Output Phase Raw'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.4.1.935.1.1.1.4.1.2.0
+          key: ups.output.phase.raw
+          delay: 1d
+          history: '0'
+          trends: '0'
+        - uuid: bffaa2118aca4978a6e9ce6501c78a1d
+          name: 'Output Status'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.4.1.1.0
+          key: ups.output.status
+          delay: 15s
+          valuemap:
+            name: 'UPS Output Status'
+          tags:
+            - tag: component
+              value: output
+          triggers:
+            - uuid: af017166df9f4fd7b2c31ca5ff88419b
+              expression: 'last(/Generic UPS SNMP/ups.output.status)=3'
+              name: 'UPS Aküden Çalışıyor (On Battery)'
+              priority: WARNING
+            - uuid: dec32f49834a4f69927cd2f510c9fd36
+              expression: 'last(/Generic UPS SNMP/ups.output.status)=6'
+              name: 'UPS Bypass Modunda (On Bypass)'
+              priority: AVERAGE
+        - uuid: 1f43a9531d77415795155bcf95721a6b
+          name: 'UPS Serial Number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.935.1.1.1.2.3.0
+          key: ups.serial
+          delay: 1d
+          value_type: TEXT
+          description: |
+            .1.3.6.1.4.1.935.1.1.1.1.2.3.0
+            .1.3.6.1.4.1.935.1.1.1.2.3.0
+          tags:
+            - tag: component
+              value: system
+      discovery_rules:
+        - uuid: 8a014d66a0784e48912522adde2115ee
+          name: 'UPS Output Phase Raw'
+          type: DEPENDENT
+          key: ups.output.raw2
+          lifetime_type: DELETE_IMMEDIATELY
+          item_prototypes:
+            - uuid: 6c9bc872e1654663a8d7726d5353cd68
+              name: 'Battery Current - {#PHASE_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '{#BATT_CURRENT_OID}'
+              key: 'ups.battery.current[{#PHASE_NAME}]'
+              value_type: FLOAT
+              units: A
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+            - uuid: 10a86b557a3a406d9f346824a5352230
+              name: 'Bypass Voltage - {#PHASE_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '{#BYPASS_VOLT_OID}'
+              key: 'ups.bypass.voltage[{#PHASE_NAME}]'
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              trigger_prototypes:
+                - uuid: 4a8719d51fae4058b1203d1dd471e681
+                  expression: 'last(/Generic UPS SNMP/ups.bypass.voltage[{#PHASE_NAME}])<180'
+                  name: 'UPS Bypass Gerilimi Düşük - {#PHASE_NAME} (Değer: {ITEM.LASTVALUE1}V)'
+                  priority: AVERAGE
+                - uuid: dd91676ce31a4b789edbf4b34a0f6f3a
+                  expression: 'last(/Generic UPS SNMP/ups.bypass.voltage[{#PHASE_NAME}])>240'
+                  name: 'UPS Bypass Gerilimi Yüksek - {#PHASE_NAME} (Değer: {ITEM.LASTVALUE1}V)'
+                  priority: AVERAGE
+            - uuid: 8bdeccc843cf4e188be9b4e1e71fb227
+              name: 'Input Frequency - {#PHASE_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '{#IN_FREQ_OID}'
+              key: 'ups.input.frequency[{#PHASE_NAME}]'
+              value_type: FLOAT
+              units: Hz
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+            - uuid: d777b934d67c419ab8b5087e96631381
+              name: 'Input Voltage - {#PHASE_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '{#IN_VOLT_OID}'
+              key: 'ups.input.voltage[{#PHASE_NAME}]'
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: input
+              trigger_prototypes:
+                - uuid: 166d6968e9c84cb0ae36d2ca37c6ff0b
+                  expression: 'last(/Generic UPS SNMP/ups.input.voltage[{#PHASE_NAME}])<180'
+                  name: 'UPS Giriş Gerilimi Düşük - {#PHASE_NAME} (Değer: {ITEM.LASTVALUE1}V)'
+                  priority: AVERAGE
+                - uuid: f6d3cb89909442fe8314716f5b3e44f1
+                  expression: 'last(/Generic UPS SNMP/ups.input.voltage[{#PHASE_NAME}])>240'
+                  name: 'UPS Giriş Gerilimi Yüksek - {#PHASE_NAME} (Değer: {ITEM.LASTVALUE1}V)'
+                  priority: AVERAGE
+            - uuid: 8b76cfdc925545138655527653abb1f2
+              name: 'Output Load - {#PHASE_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '{#OUT_LOAD_OID}'
+              key: 'ups.output.load[{#PHASE_NAME}]'
+              value_type: FLOAT
+              units: '%'
+              trigger_prototypes:
+                - uuid: cb44063e7fe846f696a469a83f9dabb2
+                  expression: 'last(/Generic UPS SNMP/ups.output.load[{#PHASE_NAME}])>80'
+                  name: 'UPS Yüksek Yük (High Load) - {#PHASE_NAME} (Yük: %{ITEM.LASTVALUE1})'
+                  priority: AVERAGE
+            - uuid: 1a70a3b2c97b4ebebd478798da337e46
+              name: 'Output Voltage - {#PHASE_NAME}'
+              type: SNMP_AGENT
+              snmp_oid: '{#OUT_VOLT_OID}'
+              key: 'ups.output.voltage[{#PHASE_NAME}]'
+              value_type: FLOAT
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.1'
+              tags:
+                - tag: component
+                  value: output
+              trigger_prototypes:
+                - uuid: 88183722760541089eb1f1ec28471112
+                  expression: 'last(/Generic UPS SNMP/ups.output.voltage[{#PHASE_NAME}])<180'
+                  name: 'UPS Çıkış Gerilimi Düşük - {#PHASE_NAME} (Değer: {ITEM.LASTVALUE1}V)'
+                  priority: AVERAGE
+                - uuid: 2ab6d8c8444047258e713b84d51fcdcd
+                  expression: 'last(/Generic UPS SNMP/ups.output.voltage[{#PHASE_NAME}])>240'
+                  name: 'UPS Çıkış Gerilimi Yüksek - {#PHASE_NAME} (Değer: {ITEM.LASTVALUE1}V)'
+                  priority: AVERAGE
+          graph_prototypes:
+            - uuid: a43c476b108e4b9a94fa1beffcf6eca9
+              name: 'Battery Current - {#PHASE_NAME}'
+              yaxismax: '0'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.battery.current[{#PHASE_NAME}]'
+            - uuid: 3ac1ed11ef0c4a97b4b7d445bc93bc34
+              name: 'Input Voltage - {#PHASE_NAME}'
+              yaxismax: '0'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.input.voltage[{#PHASE_NAME}]'
+            - uuid: 2a25624508cd4734966adb46802ec8c7
+              name: 'Output Load - {#PHASE_NAME}'
+              yaxismax: '0'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.output.load[{#PHASE_NAME}]'
+            - uuid: da1c3145472d44a089f9adde3e9a6f6b
+              name: 'Output Voltage - {#PHASE_NAME}'
+              yaxismax: '0'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.output.voltage[{#PHASE_NAME}]'
+            - uuid: 4e6ba428a8a545fda4caf9da60b540db
+              name: UPS
+              yaxismax: '0'
+              graph_items:
+                - color: 1A7C11
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.bypass.voltage[{#PHASE_NAME}]'
+                - sortorder: '1'
+                  color: '274482'
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.input.voltage[{#PHASE_NAME}]'
+                - sortorder: '2'
+                  color: F63100
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.output.load[{#PHASE_NAME}]'
+                - sortorder: '3'
+                  color: 2774A4
+                  calc_fnc: ALL
+                  item:
+                    host: 'Generic UPS SNMP'
+                    key: 'ups.output.voltage[{#PHASE_NAME}]'
+          master_item:
+            key: ups.output.phase.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var input_val = value;
+                  var cleaned = input_val.replace(/[^0-9]/g, '');
+                  var phase = parseInt(cleaned, 10);
+                  var data = [];
+                  
+                  if (isNaN(phase)) {
+                      phase = 1; 
+                  }
+                  
+                  if (phase === 3) {
+                      data.push({
+                          "{#PHASE_NAME}": "Phase R",
+                          "{#IN_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.2.2.0",
+                          "{#IN_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.2.1.0",
+                          "{#OUT_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.2.0",
+                          "{#OUT_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.1.0",
+                          "{#OUT_LOAD_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.5.0",
+                          "{#BATT_CURRENT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.1.4.0",
+                          "{#BYPASS_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.4.2.0",
+                          "{#BYPASS_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.4.1.0"
+                      });
+                      data.push({
+                          "{#PHASE_NAME}": "Phase S",
+                          "{#IN_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.2.3.0",
+                          "{#IN_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.2.1.0",
+                          "{#OUT_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.3.0",
+                          "{#OUT_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.1.0",
+                          "{#OUT_LOAD_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.6.0",
+                          "{#BATT_CURRENT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.1.4.0",
+                          "{#BYPASS_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.4.3.0",
+                          "{#BYPASS_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.4.1.0"
+                      });
+                      data.push({
+                          "{#PHASE_NAME}": "Phase T",
+                          "{#IN_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.2.4.0",
+                          "{#IN_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.2.1.0",
+                          "{#OUT_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.4.0",
+                          "{#OUT_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.1.0",
+                          "{#OUT_LOAD_OID}": ".1.3.6.1.4.1.935.1.1.1.8.3.7.0",
+                          "{#BATT_CURRENT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.1.4.0",
+                          "{#BYPASS_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.8.4.4.0",
+                          "{#BYPASS_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.8.4.1.0"
+                      });
+                  } else {
+                      data.push({
+                          "{#PHASE_NAME}": "Single Phase",
+                          "{#IN_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.3.2.1.0",
+                          "{#IN_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.3.2.4.0",
+                          "{#OUT_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.4.2.1.0",
+                          "{#OUT_FREQ_OID}": ".1.3.6.1.4.1.935.1.1.1.4.2.2.0",
+                          "{#OUT_LOAD_OID}": ".1.3.6.1.4.1.935.1.1.1.4.2.3.0",
+                          "{#BATT_CURRENT_OID}": ".1.3.6.1.4.1.935.1.1.1.2.2.7.0",
+                          "{#BYPASS_VOLT_OID}": ".1.3.6.1.4.1.935.1.1.1.5.2.1.0"
+                      });
+                  }
+                  
+                  return JSON.stringify(data);
+      tags:
+        - tag: class
+          value: power
+        - tag: target
+          value: generic
+      valuemaps:
+        - uuid: acfa20d06e8a4df0a273a641292ea18d
+          name: 'UPS Battery Status'
+          mappings:
+            - value: '1'
+              newvalue: Unknown
+            - value: '2'
+              newvalue: Normal
+            - value: '3'
+              newvalue: Low
+        - uuid: 390ea8c9a1e5449893ed8e39d5c6750f
+          name: 'UPS Output Status'
+          mappings:
+            - value: '1'
+              newvalue: Unknown
+            - value: '2'
+              newvalue: 'On Line'
+            - value: '3'
+              newvalue: 'On Battery'
+            - value: '4'
+              newvalue: 'On Boost'
+            - value: '5'
+              newvalue: Sleeping
+            - value: '6'
+              newvalue: 'On Bypass'
+            - value: '7'
+              newvalue: Rebooting
+            - value: '8'
+              newvalue: Standby
+            - value: '9'
+              newvalue: 'On Buck'
