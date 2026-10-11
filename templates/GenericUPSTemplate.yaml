@@ -160,9 +160,7 @@ zabbix_export:
           key: ups.serial
           delay: 1d
           value_type: TEXT
-          description: |
-            .1.3.6.1.4.1.935.1.1.1.1.2.3.0
-            .1.3.6.1.4.1.935.1.1.1.2.3.0
+          description:
           tags:
             - tag: component
               value: system
