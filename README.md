@@ -17,7 +17,7 @@ Depo genel olarak aşağıdaki modüler yapıyı barındırır:
 ## 🚀 Mevcut Şablonlar
 
 ### 1. Fortinet FortiSwitch SNMP (`FortiSwitchTemplate.yaml`)
-- **Açıklama:** FortiSwitch cihazları için donanım sağlığı (fan, PSU, sıcaklık), CPU/RAM/Disk, SFP optik değerleri (DOM RX/TX güç) ve akıllı arayüz keşfini içeren kapsamlı şablon.
+- **Açıklama:** FortiSwitch cihazları için donanım sağlığı (fan, PSU, sıcaklık), CPU/RAM/Disk, SFP optik değerleri (DOM RX/TX güç) ve PSU sayısına göre akıllı arayüz keşfini içeren kapsamlı şablon.
 - **Desteklenen Sürümler:** Zabbix 7.4+
 - **Öne Çıkanlar:** Entegre Dashboard, gelişmiş LLD filtreleri ve PoE takibi.
 
