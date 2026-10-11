@@ -1,0 +1,1034 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 36bff6c29af64692839d077febfc7079
+      name: 'Templates/Network devices'
+  templates:
+    - uuid: 4a7b32819c644e1b8f3d52a1c74d89ef
+      template: 'Fortinet FortiSwitch SNMP'
+      name: 'Fortinet FortiSwitch SNMP'
+      description: |
+        Fortinet FortiSwitch Cihazları için Zabbix 7.4 Standartlarında Yenilenmiş Eksiksiz Şablon.
+                
+                İzlenen Alanlar:
+                - Seri Numarası, Firmware Versiyonu, Name, Model Bilgileri
+                - Cihaz Açık Kalma Süresi (Uptime & Reboot Alarmı)
+                - CPU, RAM ve Disk Kullanımları (Alarmları Dahil)
+                - Donanım Sağlığı (Sıcaklık, Fan Durumu ve Yedekli PSU Alarmları)
+                - Otomatik Ağ Arayüz Keşfi (Port Trafik, Link Status, Errors/Discards ve PoE Güç Tüketimi)
+                - Gelişmiş SFP/DOM Optik Metrikleri (SFP Voltaj, Akım, RX/TX Lazer Güç Değerleri)
+                
+                ## Author
+                Burak Akbayrak
+      groups:
+        - name: 'Templates/Network devices'
+      items:
+        - uuid: 8fbaf457294f4d43ac724cbbbfbc3160
+          name: 'Temperature Inner'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.99.1.1.1.4.3
+          key: fsChassisTemp
+          delay: 60s
+          value_type: FLOAT
+          trends: '0'
+          units: °C
+          tags:
+            - tag: Switch
+              value: Health
+          triggers:
+            - uuid: ca7e52b329534c45bf362b352ac0715c
+              expression: 'avg(/Fortinet FortiSwitch SNMP/fsChassisTemp,5)>55'
+              name: 'FortiSwitch: Cihaz ici yuksek sicaklik (>55°C)'
+              priority: HIGH
+              description: 'Switch sicakligi kritik esigi gecti. Fanlar veya oda sogutmasi kontrol edilmelidir.'
+        - uuid: 19530fdc0c46435aba8e9def3cde7f63
+          name: 'Temperature CPU/Outer/Exhaust'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.99.1.1.1.4.4
+          key: fsChassisTemp2
+          delay: 60s
+          value_type: FLOAT
+          trends: '0'
+          units: °C
+          tags:
+            - tag: Switch
+              value: Health
+          triggers:
+            - uuid: fd481254e4a3449e86664ac504b958ab
+              expression: 'avg(/Fortinet FortiSwitch SNMP/fsChassisTemp2,5)>55'
+              name: 'FortiSwitch: Cihaz ici yuksek sicaklik (>55°C)'
+              priority: HIGH
+              description: 'Switch sicakligi kritik esigi gecti. Fanlar veya oda sogutmasi kontrol edilmelidir.'
+              tags:
+                - tag: Alert
+                  value: Critical
+        - uuid: 8f92b4512e05445da9142f65b38cb701
+          name: 'CPU Utilization'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.2.0
+          key: fsCPUUtilization
+          delay: 60s
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: Switch
+              value: Health
+          triggers:
+            - uuid: e22521e5ef9f435fb3d34924116ff6ba
+              expression: 'avg(/Fortinet FortiSwitch SNMP/fsCPUUtilization,5)>50'
+              name: '{HOSTNAME} - Usage of CPU over 50%'
+              priority: WARNING
+              description: 'CPU activity on Fortinet is more than 50% during the last five checks'
+            - uuid: db4d3a4c94bb48639cafdd1c7bca1062
+              expression: 'avg(/Fortinet FortiSwitch SNMP/fsCPUUtilization,5)>70'
+              name: '{HOSTNAME} - Usage of CPU over 70%'
+              priority: AVERAGE
+              description: 'CPU activity on Fortinet is more than 70% during the last five checks'
+        - uuid: ac33186dbb1d4bf5a5865bb830f712df
+          name: 'Fan Status'
+          type: SNMP_AGENT
+          snmp_oid: .1.3.6.1.2.1.99.1.1.1.5.4
+          key: fsFanStatus
+          value_type: TEXT
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '1'
+                - ok
+            - type: STR_REPLACE
+              parameters:
+                - '3'
+                - Problem
+          tags:
+            - tag: Switch
+              value: Health
+          triggers:
+            - uuid: 6da683456a724d20bfc663f0dfc7428d
+              expression: 'last(/Fortinet FortiSwitch SNMP/fsFanStatus)=2'
+              name: 'FortiSwitch: Fan Arizasi Algilandi'
+              priority: HIGH
+              description: 'Switch icindeki sogutma fanlarindan biri veya koku durdu ya da ariza verdi.'
+        - uuid: bd35422f28ea4bf0a3014e7a25698b92
+          name: 'Memory Usage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.3.0
+          key: fsMemoryUsage
+          delay: 60s
+          value_type: FLOAT
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: Switch
+              value: Health
+        - uuid: d440939eb9f84897a9b0cc8ebf0340b6
+          name: 'Memory Utilization'
+          type: CALCULATED
+          key: fsMemoryUtilization
+          delay: 60s
+          value_type: FLOAT
+          units: '%'
+          params: '100 * (last(//fsMemoryUsage)) / last(//fsTotalMemoryCapacity)'
+          tags:
+            - tag: Switch
+              value: Health
+          triggers:
+            - uuid: aa034f15cf414eb1939d1e1ce62144df
+              expression: 'avg(/Fortinet FortiSwitch SNMP/fsMemoryUtilization,5)>90'
+              name: '{HOSTNAME} - Memory Usage Over 90%'
+              priority: AVERAGE
+              description: 'Memory usage on Fortinet is more than 90% during the last five checks'
+        - uuid: 8cdf583a61f648108480d89a000337f8
+          name: Model
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.1.0
+          key: fsModel
+          delay: 30m
+          value_type: CHAR
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - '^([^\s]+)'
+                - \1
+          tags:
+            - tag: System
+              value: Model
+        - uuid: 4b29367bd874497e88c0a87a67f139fb
+          name: 'Serial Number'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.1.1.1.0
+          key: fsSerialNumber
+          delay: 1h
+          value_type: TEXT
+          inventory_link: SERIALNO_A
+          tags:
+            - tag: System
+              value: 'Serial Number'
+        - uuid: a343d2db73b1424fb84f67c51cf94ff8
+          name: 'Storage Utilization'
+          type: CALCULATED
+          key: fsStorageUtilization
+          delay: 60s
+          value_type: FLOAT
+          units: '%'
+          params: '100 * last(//fsUsedStorage) / last(//fsTotalStorage)'
+          tags:
+            - tag: Switch
+              value: Health
+          triggers:
+            - uuid: 17344f37eb344fb89186710dbd2028a9
+              expression: 'avg(/Fortinet FortiSwitch SNMP/fsStorageUtilization,5)>70'
+              name: '{HOSTNAME} - Storage Usage Over 70%'
+              priority: AVERAGE
+              manual_close: 'YES'
+        - uuid: df8fd1089e814af1b1a0676b40d16d58
+          name: 'Operating system'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.1.0
+          key: fsswos
+          delay: '30'
+          history: 7d
+          value_type: TEXT
+          inventory_link: OS_FULL
+        - uuid: 1451800156a54e00b7a9221485660a3a
+          name: Name
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.5.0
+          key: fsSysName
+          delay: 1h
+          value_type: TEXT
+          inventory_link: NAME
+          tags:
+            - tag: System
+              value: Name
+        - uuid: 2a9c3d4e5f6b4c7d8e9f4a1b2c3d4e5a
+          name: 'System Uptime'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.2.1.1.3.0
+          key: fsSysUpTime
+          delay: 60s
+          value_type: FLOAT
+          units: uptime
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '0.01'
+          tags:
+            - tag: System
+              value: Uptime
+          triggers:
+            - uuid: fd26b617fa3d497f8d714cb2509c7381
+              expression: 'last(/Fortinet FortiSwitch SNMP/fsSysUpTime)<600'
+              name: 'FortiSwitch: Cihaz yeniden baslatildi (Reboot)'
+              priority: WARNING
+              description: 'Cihazin acik kalma suresi 10 dakikanin altinda. Yakin zamanda reboot olmus olabilir.'
+              manual_close: 'YES'
+        - uuid: f990264bbf024508ad00609b5eb0cf0b
+          name: 'Memory Total'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.4.0
+          key: fsTotalMemoryCapacity
+          delay: 1h
+          value_type: FLOAT
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: Switch
+              value: Health
+        - uuid: 3e839e31ff6f4c80b55502a392b23a07
+          name: 'Storage Total'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.6.0
+          key: fsTotalStorage
+          delay: 1h
+          value_type: FLOAT
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: Switch
+              value: Health
+        - uuid: bc1ee8bf6e4348a28e8316238b9fa894
+          name: 'Storage Usage'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.5.0
+          key: fsUsedStorage
+          delay: 60s
+          units: B
+          preprocessing:
+            - type: MULTIPLIER
+              parameters:
+                - '1024'
+          tags:
+            - tag: Switch
+              value: Health
+        - uuid: 9a5df842283845f4afb0675e84faf13b
+          name: 'ICMP ping'
+          type: SIMPLE
+          key: icmpping
+          valuemap:
+            name: 'Service state'
+          tags:
+            - tag: check
+              value: icmp
+          triggers:
+            - uuid: fc34f8236206434aa5ea51a29b41ece9
+              expression: 'max(/Fortinet FortiSwitch SNMP/icmpping,#3)=0'
+              name: 'Unavailable by ICMP ping'
+              priority: HIGH
+              description: 'Last three attempts returned timeout.  Please check device connectivity.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: da7109a4d1954ec0bd1ced0d551b4460
+          name: 'ICMP loss'
+          type: SIMPLE
+          key: icmppingloss
+          value_type: FLOAT
+          units: '%'
+          tags:
+            - tag: check
+              value: icmp
+          triggers:
+            - uuid: dd212f8416ef406c95bc9124809e9b87
+              expression: 'min(/Fortinet FortiSwitch SNMP/icmppingloss,5m)>50'
+              name: 'High ICMP ping loss'
+              opdata: 'Loss: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              dependencies:
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'max(/Fortinet FortiSwitch SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: e9492d91f56445f6a57e68d2ebc02b35
+          name: 'ICMP response time'
+          type: SIMPLE
+          key: icmppingsec
+          value_type: FLOAT
+          units: s
+          tags:
+            - tag: check
+              value: icmp
+          triggers:
+            - uuid: fce0ce4b688f4beda343aafc9efc5b09
+              expression: 'avg(/Fortinet FortiSwitch SNMP/icmppingsec,5m)>300'
+              name: 'High ICMP ping response time'
+              opdata: 'Value: {ITEM.LASTVALUE1}'
+              priority: WARNING
+              dependencies:
+                - name: 'High ICMP ping loss'
+                  expression: 'min(/Fortinet FortiSwitch SNMP/icmppingloss,5m)>50'
+                - name: 'Unavailable by ICMP ping'
+                  expression: 'max(/Fortinet FortiSwitch SNMP/icmpping,#3)=0'
+              tags:
+                - tag: scope
+                  value: availability
+                - tag: scope
+                  value: performance
+        - uuid: a5ea04b4ddb941d18c07d73c8f1c017c
+          name: 'SNMP traps (fallback)'
+          type: SNMP_TRAP
+          key: snmptrap.fallback
+          history: 7d
+          value_type: LOG
+          logtimefmt: 'hh:mm:sszyyyy/MM/dd'
+        - uuid: 2883f3ee91e941dfa9d82136cc0ef201
+          name: 'Firmware Version'
+          type: SNMP_AGENT
+          snmp_oid: 1.3.6.1.4.1.12356.106.4.1.1.0
+          key: SysmFirmwareVersion
+          delay: 1h
+          value_type: TEXT
+          inventory_link: OS
+          preprocessing:
+            - type: REGEX
+              parameters:
+                - '(v\d+\.\d+\.\d+),(build\d+)'
+                - '\1 \2'
+          tags:
+            - tag: System
+              value: 'Firmware Version'
+        - uuid: 4be243837a804460a4133c66d0254ab9
+          name: 'SNMP agent availability'
+          type: INTERNAL
+          key: 'zabbix[host,snmp,available]'
+          valuemap:
+            name: zabbix.host.available
+      discovery_rules:
+        - uuid: 6e4311ef8ebf48a28e8316238b9fa894
+          name: 'Network Interfaces'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[ {#SNMPID},.1.3.6.1.2.1.2.2.1.1, {#IFNAME},.1.3.6.1.2.1.31.1.1.1.1, {#IFDESCR}, .1.3.6.1.2.1.2.2.1.2]'
+          key: ifname
+          delay: 5m
+          filter:
+            conditions:
+              - macro: '{#IFNAME}'
+                value: internal
+                operator: NOT_MATCHES_REGEX
+          item_prototypes:
+            - uuid: efb40d6ad337460585e2fca67ae51c2b
+              name: 'PoE Power {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.12356.106.2.1.1.1.12.{#SNMPID}'
+              key: 'fsPoEPower[{#IFNAME}]'
+              delay: 60s
+              value_type: FLOAT
+              trends: '0'
+              units: W
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: Port
+                  value: 'PoE Status'
+            - uuid: 73b1424fb84f424fb84f67c51cf94ff8
+              name: 'Upload {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifHCOutOctets.{#SNMPID}'
+              key: 'ifHCOutOctets[{#IFNAME}]'
+              delay: 30s
+              value_type: FLOAT
+              trends: 60d
+              units: bps
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Port
+                  value: Traffic
+            - uuid: 91e941dfa9d841dfa9d841236cc0ef2a
+              name: 'Link Speed {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: 'IF-MIB::ifHighSpeed.{#SNMPID}'
+              key: 'ifHighSpeed[{#IFNAME}]'
+              delay: 5m
+              value_type: FLOAT
+              trends: '0'
+              tags:
+                - tag: Port
+                  value: Speed
+            - uuid: 0d492c36a8a643318de447dc3c8ce3da
+              name: 'Inbound Discards {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.13.{#SNMPID}'
+              key: 'ifInDiscards[{#IFNAME}]'
+              delay: 30s
+              trends: '0'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Port
+                  value: Errors
+            - uuid: d08b25f251b24d43a9f3053168befcb3
+              name: 'Inbound Errors {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.14.{#SNMPID}'
+              key: 'ifInErrors[{#IFNAME}]'
+              delay: 30s
+              value_type: FLOAT
+              trends: '0'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Port
+                  value: Errors
+            - uuid: d874497e88c0497e88c04a7a67f139fb
+              name: 'Download {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.10.{#SNMPID}'
+              key: 'ifInOctets[{#IFNAME}]'
+              delay: 30s
+              value_type: FLOAT
+              trends: 60d
+              units: bps
+              description: 'ifInOctets[{#SNMPVALUE}] - IF-MIB::ifInOctets.{#SNMPINDEX}'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+                - type: MULTIPLIER
+                  parameters:
+                    - '8'
+              tags:
+                - tag: Port
+                  value: Traffic
+            - uuid: 9f884ed4f5164e92ae3748f3e1add082
+              name: 'Link Status {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.8.{#SNMPID}'
+              key: 'ifOperStatus[{#IFNAME}]'
+              delay: 30s
+              history: 7d
+              value_type: TEXT
+              description: '"1: Up, 2: Down"'
+              preprocessing:
+                - type: STR_REPLACE
+                  parameters:
+                    - '1'
+                    - Up
+                - type: STR_REPLACE
+                  parameters:
+                    - '2'
+                    - Down
+              tags:
+                - tag: Port
+                  value: Status
+            - uuid: bc8454379de74625993128721129de2c
+              name: 'Outbound Discards {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.19.{#SNMPID}'
+              key: 'ifOutDiscards[{#IFNAME}]'
+              delay: '30'
+              value_type: FLOAT
+              trends: '0'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Port
+                  value: Errors
+            - uuid: dca02d019d65477b93f8f03ff3a1ac1c
+              name: 'Outbound Errors {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.2.1.2.2.1.20.{#SNMPID}'
+              key: 'ifOutErrors[{#IFNAME}]'
+              delay: 30s
+              value_type: FLOAT
+              trends: '0'
+              preprocessing:
+                - type: CHANGE_PER_SECOND
+              tags:
+                - tag: Port
+                  value: Errors
+            - uuid: 96186748111642db88479505e8d608bb
+              name: 'SFP Bias Current {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.12356.106.2.1.2.1.4.{#SNMPID}'
+              key: 'sfpCurrent[{#IFNAME}]'
+              delay: 5m
+              value_type: FLOAT
+              trends: '0'
+              units: mA
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.01'
+              tags:
+                - tag: Port
+                  value: 'SFP Status'
+            - uuid: 03e68a8842274fdeb3102da99c90b1cb
+              name: 'SFP RX Power {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.12356.106.2.1.2.1.6.{#SNMPID}'
+              key: 'sfpRxPower[{#IFNAME}]'
+              delay: 5m
+              value_type: FLOAT
+              trends: '0'
+              units: dBm
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.01'
+              tags:
+                - tag: Port
+                  value: 'SFP Status'
+            - uuid: 4f00ab92fe8b49f5b90350687a22e9a7
+              name: 'SFP TX Power {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.12356.106.2.1.2.1.5.{#SNMPID}'
+              key: 'sfpTxPower[{#IFNAME}]'
+              delay: 5m
+              value_type: FLOAT
+              trends: '0'
+              units: dBm
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.01'
+              tags:
+                - tag: Port
+                  value: 'SFP Status'
+            - uuid: 5f7b36a53c7341c58ff1a626c749a563
+              name: 'SFP Voltage {#IFNAME}'
+              type: SNMP_AGENT
+              snmp_oid: '1.3.6.1.4.1.12356.106.2.1.2.1.3.{#SNMPID}'
+              key: 'sfpVoltage[{#IFNAME}]'
+              delay: 5m
+              value_type: FLOAT
+              trends: '0'
+              units: V
+              preprocessing:
+                - type: MULTIPLIER
+                  parameters:
+                    - '0.001'
+              tags:
+                - tag: Port
+                  value: 'SFP Status'
+          graph_prototypes:
+            - uuid: 5c2a89abcdef497e88c04a7a67f139fb
+              name: 'Network Traffic {#IFNAME} {#IFDESCR}'
+              graph_items:
+                - drawtype: GRADIENT_LINE
+                  color: 1A7C11
+                  item:
+                    host: 'Fortinet FortiSwitch SNMP'
+                    key: 'ifInOctets[{#IFNAME}]'
+                - sortorder: '1'
+                  drawtype: GRADIENT_LINE
+                  color: F63100
+                  item:
+                    host: 'Fortinet FortiSwitch SNMP'
+                    key: 'ifHCOutOctets[{#IFNAME}]'
+            - uuid: 5ac30487f40747448228e33be9b0d1ef
+              name: 'SFP DOM Optical Power {#IFNAME} {#IFDESCR}'
+              graph_items:
+                - color: 2B82C9
+                  calc_fnc: ALL
+                  item:
+                    host: 'Fortinet FortiSwitch SNMP'
+                    key: 'sfpRxPower[{#IFNAME}]'
+                - sortorder: '1'
+                  color: FF9F00
+                  calc_fnc: ALL
+                  item:
+                    host: 'Fortinet FortiSwitch SNMP'
+                    key: 'sfpTxPower[{#IFNAME}]'
+          lld_macro_paths:
+            - lld_macro: '{#IFDESCR}'
+              path: $.ifdescr
+            - lld_macro: '{#IFNAME}'
+              path: $.ifname
+            - lld_macro: '{#SNMPID}'
+              path: $.snmpid
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  
+                  for (var i = 0; i < data.length; i++) {
+                      // Nesne alanını string (köşeli parantez) ile güvenli şekilde çağırıyoruz
+                      if (data[i]["{#IFDESCR}"]) {
+                          var desc = data[i]["{#IFDESCR}"];
+                          
+                          // port1(primary) gibi standart yapıyı yakala
+                          if (desc.indexOf('port') === 0 && desc.indexOf('(primary)') !== -1) {
+                              data[i]["{#IFDESCR}"] = "nodesc";
+                          }
+                          // internal(primary) gibi port dışı ama primary içeren gereksizleri temizle
+                          else if (desc.indexOf('(primary)') !== -1) {
+                              {
+                                  data[i]["{#IFDESCR}"] = "nodesc";
+                              }
+                          }
+                  		else if (desc.indexOf('(mgmt)') !== -1){
+                              data[i]["{#IFDESCR}"] = "nodesc";
+                          }
+                  		else if (desc.indexOf('(internal)') !== -1){
+                              data[i]["{#IFDESCR}"] = "nodesc";
+                          }
+                      }
+                  }
+                  
+                  return JSON.stringify(data);
+        - uuid: 7944db601d8e40d78a40e03d45c269e7
+          name: 'System Component'
+          type: SNMP_AGENT
+          snmp_oid: 'discovery[{#PSUDESCR}, .1.3.6.1.2.1.47.1.1.1.1.2]'
+          key: syscomp
+          delay: 5m
+          filter:
+            conditions:
+              - macro: '{#PSUDESCR}'
+                value: 'Power Supply'
+          item_prototypes:
+            - uuid: 48269105aeb542528a4c4b25013ea1d9
+              name: 'PSU {#PSU_NUM} Status'
+              type: SNMP_AGENT
+              snmp_oid: '.1.3.6.1.2.1.99.1.1.1.5.{#SNMPINDEX}'
+              key: 'fortinet.switch.psu.status[{#SNMPINDEX}]'
+              delay: 5m
+              trends: '0'
+              valuemap:
+                name: 'Service state'
+              tags:
+                - tag: Switch
+                  value: Health
+                - tag: System
+                  value: 'PSU Status'
+              trigger_prototypes:
+                - uuid: 665abb39dd04410c80b26ac305aef7f5
+                  expression: 'last(/Fortinet FortiSwitch SNMP/fortinet.switch.psu.status[{#SNMPINDEX}],#5)=0'
+                  name: 'FortiSwitch: PSU {#PSU_NUM} Arizasi Algilandi'
+                  priority: HIGH
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var data = JSON.parse(value);
+                  var filteredData = [];
+                  var psuCounter = 1;
+                  
+                  for (var i = 0; i < data.length; i++) {
+                      // Sadece Power Supply olan sensörleri yakala
+                      if (data[i]["{#PSUDESCR}"].indexOf("Sensor, Type: Power Supply") !== -1) {
+                          filteredData.push({
+                              "{#SNMPINDEX}": data[i]["{#SNMPINDEX}"],
+                              "{#PSUDESCR}": data[i]["{#PSUDESCR}"],
+                              "{#PSU_NUM}": psuCounter.toString() // 1, 2 diye dinamik sayı üretir
+                          });
+                          psuCounter++;
+                      }
+                  }
+                  
+                  return JSON.stringify(filteredData);
+      tags:
+        - tag: class
+          value: network
+        - tag: target
+          value: fortinet
+        - tag: target
+          value: fortiswitch
+      dashboards:
+        - uuid: 52951152b965480da06fa64d923c0cdd
+          name: Overview
+          pages:
+            - widgets:
+                - type: item
+                  name: 'Serial Number'
+                  width: '23'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '20'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Fortinet FortiSwitch SNMP'
+                        key: fsSerialNumber
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: units_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: units_show
+                      value: '0'
+                    - type: INTEGER
+                      name: value_size
+                      value: '40'
+                - type: gauge
+                  name: 'CPU utilization'
+                  'y': '3'
+                  width: '27'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: |
+                        {ITEM.NAME}
+                        {ITEM.DESCRIPTION}
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Fortinet FortiSwitch SNMP'
+                        key: fsCPUUtilization
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '80'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: gauge
+                  name: 'Free disk percentage'
+                  'y': '8'
+                  width: '27'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: |
+                        {ITEM.NAME}
+                        {ITEM.DESCRIPTION}
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Fortinet FortiSwitch SNMP'
+                        key: fsStorageUtilization
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '20'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '40'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: item
+                  name: Firmware
+                  x: '23'
+                  width: '37'
+                  height: '3'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_size
+                      value: '20'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Fortinet FortiSwitch SNMP'
+                        key: SysmFirmwareVersion
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: units_bold
+                      value: '0'
+                    - type: INTEGER
+                      name: units_show
+                      value: '0'
+                    - type: INTEGER
+                      name: value_size
+                      value: '40'
+                - type: gauge
+                  name: 'Memory utilization'
+                  x: '27'
+                  'y': '3'
+                  width: '27'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: decimal_places
+                      value: '0'
+                    - type: STRING
+                      name: description
+                      value: |
+                        {ITEM.NAME}
+                        {ITEM.DESCRIPTION}
+                    - type: INTEGER
+                      name: desc_size
+                      value: '8'
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'Fortinet FortiSwitch SNMP'
+                        key: fsMemoryUtilization
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '70'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '90'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: th_show_labels
+                      value: '1'
+                    - type: INTEGER
+                      name: units_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '15'
+                - type: problems
+                  x: '27'
+                  'y': '8'
+                  width: '27'
+                  height: '5'
+                  fields:
+                    - type: INTEGER
+                      name: acknowledgement_status
+                      value: '1'
+                    - type: STRING
+                      name: reference
+                      value: CUFKF
+                    - type: INTEGER
+                      name: show
+                      value: '3'
+                    - type: INTEGER
+                      name: show_opdata
+                      value: '2'
+                    - type: INTEGER
+                      name: show_tags
+                      value: '1'
+                    - type: STRING
+                      name: tag_priority
+                      value: scope
+      valuemaps:
+        - uuid: ec5a278a5f8c4a55a3539a707b48c30c
+          name: 'EtherLike-MIB::dot3StatsDuplexStatus'
+          mappings:
+            - value: '1'
+              newvalue: unknown
+            - value: '2'
+              newvalue: halfDuplex
+            - value: '3'
+              newvalue: fullDuplex
+        - uuid: c7cd49da142a406ca867f8836515311a
+          name: 'IF-MIB::ifOperStatus'
+          mappings:
+            - value: '1'
+              newvalue: up
+            - value: '2'
+              newvalue: down
+            - value: '3'
+              newvalue: testing
+        - uuid: 6623841002d9404f8838ff0c73d15888
+          name: 'Service state'
+          mappings:
+            - value: '0'
+              newvalue: Down
+            - value: '1'
+              newvalue: Up
+        - uuid: e2bf79ed41c34b59a2787ae71386eb86
+          name: zabbix.host.available
+          mappings:
+            - value: '0'
+              newvalue: 'Not available'
+            - value: '1'
+              newvalue: available
+            - value: '2'
+              newvalue: unknown
+  graphs:
+    - uuid: f54e3e9175454216bbc121da94823d6c
+      name: 'CPU %'
+      yaxismax: '0'
+      show_work_period: 'NO'
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'Fortinet FortiSwitch SNMP'
+            key: fsCPUUtilization
+    - uuid: 7be1737e73ea46e9aa36cafd28581fab
+      name: 'Disk use'
+      width: '400'
+      height: '400'
+      yaxismax: '0'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      type: PIE
+      show_3d: 'YES'
+      graph_items:
+        - color: FF0000
+          item:
+            host: 'Fortinet FortiSwitch SNMP'
+            key: fsUsedStorage
+        - sortorder: '1'
+          color: 00FF00
+          type: GRAPH_SUM
+          item:
+            host: 'Fortinet FortiSwitch SNMP'
+            key: fsTotalStorage
+    - uuid: 85910f82a02b41c2a2cc8a9da4e0bcb7
+      name: 'RAM %'
+      yaxismax: '0'
+      show_work_period: 'NO'
+      graph_items:
+        - drawtype: GRADIENT_LINE
+          color: EF5350
+          item:
+            host: 'Fortinet FortiSwitch SNMP'
+            key: fsMemoryUtilization
